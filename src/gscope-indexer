@@ -2,19 +2,24 @@
 ###############################################################################
 #
 # File:         gscope-indexer
-# Description:  Script to index files for gscope
+# Description:  Script to index files for gscope and cscope
 #
-#               This script generates a list of files to index and
-#               optionally builds the gscope/cscope database.  Unlike
-#               cscope-indexer, this script is not limited to C/C++ source
-#               files -- it indexes any text-based file type you specify.
+#               When invoked as 'gscope-indexer' (default), indexes text
+#               and markup file types suitable for use with gscope.
 #
-#               Default indexed extensions:
-#                 .md .txt .cap .wiki .rst .adoc .html .xml
-#                 .json .yaml .yml .sh .pl .py .rb .lua .go
+#               When invoked as 'cscope-indexer' (via symlink), indexes
+#               C/C++ source file types suitable for use with cscope,
+#               preserving classic cscope-indexer behavior.
 #
-#               Exclusions: .git, .svn, CVS, RCS directories are always
-#               skipped.
+#               Default indexed extensions by mode:
+#
+#                 gscope-indexer: md txt cap wiki rst adoc html xml
+#                                 json yaml yml sh pl py rb lua go
+#
+#                 cscope-indexer: c h l y cc hh cpp hpp cxx
+#
+#               In either mode, extensions can be overridden with -e.
+#               Exclusions: .git, .svn, CVS, RCS directories always skipped.
 #
 # Usage:
 #
@@ -24,20 +29,20 @@
 #                    [ -e "ext1 ext2 ..." ]
 #                    [ directory ]
 #
+#     cscope-indexer [ same options ]
+#
 # Options:
 #
 #     -e "ext1 ext2 ..."
 #          Space-separated list of file extensions to index (without dots).
+#          Overrides the default extension list for the current mode.
 #          Example: -e "md txt cap"
-#          Default: md txt cap wiki rst adoc html xml json yaml yml
-#                   sh pl py rb lua go
 #
 #     -f database_file
-#          Specifies the gscope database file (default: cscope.out).
+#          Specifies the database file (default: cscope.out).
 #
 #     -i list_file
-#          Specifies the file into which the list of indexed files is
-#          written (default: cscope.files).
+#          Specifies the file list output file (default: cscope.files).
 #
 #     -l
 #          List only -- suppress database generation, just build the
@@ -50,15 +55,23 @@
 #     -v
 #          Verbose -- print progress messages.
 #
-# Author:       Adapted from cscope-indexer by Darryl Okahata
-# Created:      $(date '+%a %b %d %H:%M:%S %Y')
-# Language:     Shell-script
-#
 ###############################################################################
 set -e
 
 PATH="/usr/local/bin:/sbin:/usr/sbin:/bin:/usr/bin:$PATH"
 export PATH
+
+# Detect invocation mode via argv[0] basename
+MYNAME=$(basename "$0")
+
+# Set default extensions based on invocation mode
+if [ "$MYNAME" = "cscope-indexer" ]; then
+    MODE="cscope"
+    EXTENSIONS="c h l y cc hh cpp hpp cxx"
+else
+    MODE="gscope"
+    EXTENSIONS="md txt cap wiki rst adoc html xml json yaml yml sh pl py rb lua go"
+fi
 
 # Defaults
 LIST_ONLY=
@@ -67,7 +80,6 @@ LIST_FILE='cscope.files'
 DATABASE_FILE='cscope.out'
 RECURSE=
 VERBOSE=
-EXTENSIONS="md txt cap wiki rst adoc html xml json yaml yml sh pl py rb lua go"
 
 export DIR RECURSE
 
@@ -123,16 +135,6 @@ do
 done
 
 # Build the egrep pattern from the extension list
-# e.g. "md txt cap" becomes "\.(md|txt|cap)$"
-EXT_PATTERN=$(echo "$EXTENSIONS" | tr ' ' '\n' | \
-    sed 's/^\.*//' | \
-    tr '\n' '|' | \
-    sed 's/|$//' | \
-    sed 's/.*/\\.(& )$/' | \
-    sed 's/ /|/g' | \
-    sed 's/)$/)\$/')
-
-# Simpler, more portable construction:
 EXT_PATTERN=""
 for ext in $EXTENSIONS
 do
@@ -148,9 +150,10 @@ EXT_PATTERN="\\.($EXT_PATTERN)\$"
 
 if [ "X$VERBOSE" != "X" ]
 then
-    echo "gscope-indexer: indexing extensions: $EXTENSIONS"
-    echo "gscope-indexer: pattern: $EXT_PATTERN"
-    echo "gscope-indexer: creating file list ..."
+    echo "$MYNAME: mode: $MODE"
+    echo "$MYNAME: indexing extensions: $EXTENSIONS"
+    echo "$MYNAME: pattern: $EXT_PATTERN"
+    echo "$MYNAME: creating file list ..."
 fi
 
 cd $DIR
@@ -178,8 +181,8 @@ cd $DIR
 FILECOUNT=$(wc -l < $LIST_FILE | tr -d ' ')
 if [ "X$VERBOSE" != "X" ]
 then
-    echo "gscope-indexer: $FILECOUNT file(s) found."
-    echo "gscope-indexer: creating file list ... done"
+    echo "$MYNAME: $FILECOUNT file(s) found."
+    echo "$MYNAME: creating file list ... done"
 fi
 
 if [ "$FILECOUNT" -eq 0 ]
@@ -195,15 +198,15 @@ fi
 
 if [ "X$VERBOSE" != "X" ]
 then
-    echo "gscope-indexer: building database ..."
+    echo "$MYNAME: building database ..."
 fi
 
 cscope -b -i $LIST_FILE -f $DATABASE_FILE
 
 if [ "X$VERBOSE" != "X" ]
 then
-    echo "gscope-indexer: building database ... done"
-    echo "gscope-indexer: database written to $DATABASE_FILE"
+    echo "$MYNAME: building database ... done"
+    echo "$MYNAME: database written to $DATABASE_FILE"
 fi
 
 exit 0

@@ -13,6 +13,9 @@ EXTRA_PROGRAMS = gscope
 endif
 bin_PROGRAMS = cscope
 
+## Install gscope-indexer script into bindir
+dist_bin_SCRIPTS = gscope-indexer
+
 if USING_LEX
 LEXER_SOURCE=scanner.l
 else
@@ -53,3 +56,35 @@ gscope_LDADD =  $(CURSES_LIBS) $(LEXLIB)
 gscope_SOURCES = gscope.c $(cscope_SOURCES)
 gscope_LDFLAGS = $(GNOMELINKAGE) $(GNOME_LINUX_FLAG)
 endif
+
+## Post-install hook: create gscope and cscope-indexer symlinks if missing
+install-exec-hook:
+	@echo "Creating gscope symlink ..."; \
+	cd "$(DESTDIR)$(bindir)" && \
+	if [ ! -f gscope ] && [ ! -L gscope ]; then \
+		ln -sf cscope gscope; \
+		echo "  Created: $(DESTDIR)$(bindir)/gscope -> cscope"; \
+	else \
+		echo "  Exists:  $(DESTDIR)$(bindir)/gscope (skipped)"; \
+	fi
+	@echo "Creating cscope-indexer symlink ..."; \
+	cd "$(DESTDIR)$(bindir)" && \
+	if [ ! -f cscope-indexer ] && [ ! -L cscope-indexer ]; then \
+		ln -sf gscope-indexer cscope-indexer; \
+		echo "  Created: $(DESTDIR)$(bindir)/cscope-indexer -> gscope-indexer"; \
+	else \
+		echo "  Exists:  $(DESTDIR)$(bindir)/cscope-indexer (skipped)"; \
+	fi
+
+## Uninstall hook: remove gscope and cscope-indexer symlinks
+uninstall-hook:
+	@echo "Removing gscope symlink ..."; \
+	if [ -L "$(DESTDIR)$(bindir)/gscope" ]; then \
+		rm -f "$(DESTDIR)$(bindir)/gscope"; \
+		echo "  Removed: $(DESTDIR)$(bindir)/gscope"; \
+	fi
+	@echo "Removing cscope-indexer symlink ..."; \
+	if [ -L "$(DESTDIR)$(bindir)/cscope-indexer" ]; then \
+		rm -f "$(DESTDIR)$(bindir)/cscope-indexer"; \
+		echo "  Removed: $(DESTDIR)$(bindir)/cscope-indexer"; \
+	fi

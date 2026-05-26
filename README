@@ -1,3 +1,10 @@
+------------------------------------------------------------------------
+NOTE: This repository includes gscope, a language-agnostic generic text
+search extension to cscope. If you want to use cscope with non-C file
+types (markdown, plain text, scripts, etc.), see README.gscope for full
+details on installation, indexing, and boolean search syntax.
+------------------------------------------------------------------------
+
 Cscope is a text screen based source browsing tool.  Although it is
 primarily designed to search C code (including lex and yacc files), it
 can also be used for C++ code.

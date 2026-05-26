@@ -50,6 +50,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+dist_bin_SCRIPTS = gscope-indexer
+bin_SCRIPTS = $(dist_bin_SCRIPTS)
 am__cscope_SOURCES_DIST = fscanner.l scanner.l egrep.y alloc.c alloc.h \
 	basename.c build.c build.h command.c compath.c constants.h \
 	crossref.c dir.c display.c edit.c exec.c find.c global.h \
@@ -967,7 +969,50 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS
+install-exec-am: install-binPROGRAMS install-binSCRIPTS
+	@$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
+
+install-binSCRIPTS: $(bin_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
+	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then srcfile="$$p"; \
+	  elif test -f "$(srcdir)/$$p"; then srcfile="$(srcdir)/$$p"; \
+	  else continue; fi; \
+	  echo " $(INSTALL_SCRIPT) '$$srcfile' '$(DESTDIR)$(bindir)/$$p'"; \
+	  $(INSTALL_SCRIPT) "$$srcfile" "$(DESTDIR)$(bindir)/$$p"; \
+	done
+
+install-exec-hook:
+	@echo "Creating gscope symlink ..."; \
+	cd "$(DESTDIR)$(bindir)" && \
+	if [ ! -f gscope ] && [ ! -L gscope ]; then \
+		ln -sf cscope gscope; \
+		echo "  Created: $(DESTDIR)$(bindir)/gscope -> cscope"; \
+	else \
+		echo "  Exists:  $(DESTDIR)$(bindir)/gscope (skipped)"; \
+	fi
+	@echo "Creating cscope-indexer symlink ..."; \
+	cd "$(DESTDIR)$(bindir)" && \
+	if [ ! -f cscope-indexer ] && [ ! -L cscope-indexer ]; then \
+		ln -sf gscope-indexer cscope-indexer; \
+		echo "  Created: $(DESTDIR)$(bindir)/cscope-indexer -> gscope-indexer"; \
+	else \
+		echo "  Exists:  $(DESTDIR)$(bindir)/cscope-indexer (skipped)"; \
+	fi
+
+uninstall-hook:
+	@echo "Removing gscope symlink ..."; \
+	if [ -L "$(DESTDIR)$(bindir)/gscope" ]; then \
+		rm -f "$(DESTDIR)$(bindir)/gscope"; \
+		echo "  Removed: $(DESTDIR)$(bindir)/gscope"; \
+	fi
+	@echo "Removing cscope-indexer symlink ..."; \
+	if [ -L "$(DESTDIR)$(bindir)/cscope-indexer" ]; then \
+		rm -f "$(DESTDIR)$(bindir)/cscope-indexer"; \
+		echo "  Removed: $(DESTDIR)$(bindir)/cscope-indexer"; \
+	fi
 
 install-html: install-html-am
 
