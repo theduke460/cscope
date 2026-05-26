@@ -63,7 +63,7 @@ am_cscope_OBJECTS = $(am__objects_1) egrep.$(OBJEXT) alloc.$(OBJEXT) \
 	basename.$(OBJEXT) build.$(OBJEXT) command.$(OBJEXT) \
 	compath.$(OBJEXT) crossref.$(OBJEXT) dir.$(OBJEXT) \
 	display.$(OBJEXT) edit.$(OBJEXT) exec.$(OBJEXT) find.$(OBJEXT) \
-	help.$(OBJEXT) history.$(OBJEXT) input.$(OBJEXT) \
+	gscope.$(OBJEXT) help.$(OBJEXT) history.$(OBJEXT) input.$(OBJEXT) \
 	invlib.$(OBJEXT) logdir.$(OBJEXT) lookup.$(OBJEXT) \
 	main.$(OBJEXT) mouse.$(OBJEXT) mygetenv.$(OBJEXT) \
 	mypopen.$(OBJEXT) vpaccess.$(OBJEXT) vpfopen.$(OBJEXT) \
