@@ -364,7 +364,7 @@ display(void)
     move(isgscope ? (LINES - 2) : FLDLINE, 0);
     if (isgscope) {
         /* gscope mode: single generic search field at bottom */
-        printw("Find text (case-insensitive, use && for AND): ");
+        printw("Find text [&&=AND ||=OR (())=group]: ");
     } else {
         /* cscope mode: all C-language specific fields */
         for (i = 0; i < FIELDS; ++i) {
@@ -387,7 +387,7 @@ setfield(void)
 	if (isgscope) {
 		/* position cursor after the gscope prompt */
 		fldline   = LINES - 2;
-		fldcolumn = strlen("Find text (case-insensitive, use && for AND): ");
+		fldcolumn = strlen("Find text [&&=AND ||=OR (())=group]: ");
 	} else {
 		fldline   = FLDLINE + field;
 		fldcolumn = strlen(fields[field].text1) + strlen(fields[field].text2) + 3;
