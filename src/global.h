@@ -239,6 +239,11 @@ extern	char	*editor, *home, *shell, *lineflag;	/* environment variables */
 extern	char	*home;		/* Home directory */
 extern 	BOOL	lineflagafterfile;
 extern	char	*argv0;		/* command name */
+extern	BOOL	isgscope;	/* running as gscope (generic search mode) */
+
+/* gscope.c prototypes */
+extern	BOOL	gscope_match(const char *pattern, const char *line);
+extern	char	*findgscope(char *pattern);
 extern	BOOL	compress;	/* compress the characters in the crossref */
 extern	BOOL	dbtruncated;	/* database symbols truncated to 8 chars */
 extern	int	dispcomponents;	/* file path components to display */

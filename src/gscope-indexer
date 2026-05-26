@@ -1,0 +1,209 @@
+#! /bin/sh
+###############################################################################
+#
+# File:         gscope-indexer
+# Description:  Script to index files for gscope
+#
+#               This script generates a list of files to index and
+#               optionally builds the gscope/cscope database.  Unlike
+#               cscope-indexer, this script is not limited to C/C++ source
+#               files -- it indexes any text-based file type you specify.
+#
+#               Default indexed extensions:
+#                 .md .txt .cap .wiki .rst .adoc .html .xml
+#                 .json .yaml .yml .sh .pl .py .rb .lua .go
+#
+#               Exclusions: .git, .svn, CVS, RCS directories are always
+#               skipped.
+#
+# Usage:
+#
+#     gscope-indexer [ -v ] [ -r ] [ -l ]
+#                    [ -f database_file ]
+#                    [ -i list_file ]
+#                    [ -e "ext1 ext2 ..." ]
+#                    [ directory ]
+#
+# Options:
+#
+#     -e "ext1 ext2 ..."
+#          Space-separated list of file extensions to index (without dots).
+#          Example: -e "md txt cap"
+#          Default: md txt cap wiki rst adoc html xml json yaml yml
+#                   sh pl py rb lua go
+#
+#     -f database_file
+#          Specifies the gscope database file (default: cscope.out).
+#
+#     -i list_file
+#          Specifies the file into which the list of indexed files is
+#          written (default: cscope.files).
+#
+#     -l
+#          List only -- suppress database generation, just build the
+#          file list.
+#
+#     -r
+#          Recurse into subdirectories.
+#          Without this option, only the current directory is searched.
+#
+#     -v
+#          Verbose -- print progress messages.
+#
+# Author:       Adapted from cscope-indexer by Darryl Okahata
+# Created:      $(date '+%a %b %d %H:%M:%S %Y')
+# Language:     Shell-script
+#
+###############################################################################
+set -e
+
+PATH="/usr/local/bin:/sbin:/usr/sbin:/bin:/usr/bin:$PATH"
+export PATH
+
+# Defaults
+LIST_ONLY=
+DIR='.'
+LIST_FILE='cscope.files'
+DATABASE_FILE='cscope.out'
+RECURSE=
+VERBOSE=
+EXTENSIONS="md txt cap wiki rst adoc html xml json yaml yml sh pl py rb lua go"
+
+export DIR RECURSE
+
+# Parse arguments
+while [ -n "$1" ]
+do
+    case "$1" in
+    -e)
+        if [ "X$2" = "X" ]
+        then
+            echo "$0: No extensions specified after -e" >&2
+            exit 1
+        fi
+        EXTENSIONS="$2"
+        shift
+        ;;
+    -f)
+        if [ "X$2" = "X" ]
+        then
+            echo "$0: No database file specified after -f" >&2
+            exit 1
+        fi
+        DATABASE_FILE="$2"
+        shift
+        ;;
+    -i)
+        if [ "X$2" = "X" ]
+        then
+            echo "$0: No list file specified after -i" >&2
+            exit 1
+        fi
+        LIST_FILE="$2"
+        shift
+        ;;
+    -l)
+        LIST_ONLY=1
+        ;;
+    -r)
+        RECURSE=1
+        ;;
+    -v)
+        VERBOSE=1
+        ;;
+    -*)
+        echo "$0: Unknown option: $1" >&2
+        exit 1
+        ;;
+    *)
+        DIR="$1"
+        ;;
+    esac
+    shift
+done
+
+# Build the egrep pattern from the extension list
+# e.g. "md txt cap" becomes "\.(md|txt|cap)$"
+EXT_PATTERN=$(echo "$EXTENSIONS" | tr ' ' '\n' | \
+    sed 's/^\.*//' | \
+    tr '\n' '|' | \
+    sed 's/|$//' | \
+    sed 's/.*/\\.(& )$/' | \
+    sed 's/ /|/g' | \
+    sed 's/)$/)\$/')
+
+# Simpler, more portable construction:
+EXT_PATTERN=""
+for ext in $EXTENSIONS
+do
+    ext=$(echo "$ext" | sed 's/^\.//')   # strip leading dot if present
+    if [ "X$EXT_PATTERN" = "X" ]
+    then
+        EXT_PATTERN="$ext"
+    else
+        EXT_PATTERN="$EXT_PATTERN|$ext"
+    fi
+done
+EXT_PATTERN="\\.($EXT_PATTERN)\$"
+
+if [ "X$VERBOSE" != "X" ]
+then
+    echo "gscope-indexer: indexing extensions: $EXTENSIONS"
+    echo "gscope-indexer: pattern: $EXT_PATTERN"
+    echo "gscope-indexer: creating file list ..."
+fi
+
+cd $DIR
+
+(
+    if [ "X$RECURSE" = "X" ]
+    then
+        for f in *
+        do
+            echo "$DIR/$f"
+        done
+    else
+        find $DIR \( -type f -o -type l \) \
+            ! -path '*/.git/*'   \
+            ! -path '*/CVS/*'    \
+            ! -path '*/RCS/*'    \
+            ! -path '*/.svn/*'
+    fi
+) | \
+    egrep -i "$EXT_PATTERN" | \
+    sort | \
+    sed -e '/[ \t]/s/^.*$/\"&\"/' > $LIST_FILE
+
+# Report how many files were found
+FILECOUNT=$(wc -l < $LIST_FILE | tr -d ' ')
+if [ "X$VERBOSE" != "X" ]
+then
+    echo "gscope-indexer: $FILECOUNT file(s) found."
+    echo "gscope-indexer: creating file list ... done"
+fi
+
+if [ "$FILECOUNT" -eq 0 ]
+then
+    echo "$0: Warning: no matching files found. Check directory and extensions." >&2
+    exit 1
+fi
+
+if [ "X$LIST_ONLY" != "X" ]
+then
+    exit 0
+fi
+
+if [ "X$VERBOSE" != "X" ]
+then
+    echo "gscope-indexer: building database ..."
+fi
+
+cscope -b -i $LIST_FILE -f $DATABASE_FILE
+
+if [ "X$VERBOSE" != "X" ]
+then
+    echo "gscope-indexer: building database ... done"
+    echo "gscope-indexer: database written to $DATABASE_FILE"
+fi
+
+exit 0

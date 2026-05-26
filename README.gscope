@@ -1,0 +1,237 @@
+# gscope — Generic Text Search Mode for cscope
+
+## Overview
+
+gscope is a language-agnostic extension of the classic cscope source code
+navigation tool. While cscope is purpose-built for C/C++ source navigation,
+gscope repurposes cscope's proven cross-reference engine for searching any
+text-based file corpus — markdown documents, plain text, shell scripts,
+configuration files, novel chapters, wiki pages, and more.
+
+gscope is not a separate program. It is the same cscope binary invoked via
+a symlink named 'gscope'. When cscope detects that it was invoked as 'gscope'
+via argv[0], it automatically activates generic search mode.
+
+## Key Differences from cscope
+
+| Feature                  | cscope              | gscope                        |
+|--------------------------|---------------------|-------------------------------|
+| Search fields            | 10 C-specific       | 1 generic                     |
+| Case sensitivity         | Configurable        | Always case-insensitive       |
+| Boolean expressions      | No                  | Yes (&&, \|\|, (( )))         |
+| File types               | C/C++ source        | Any text file                 |
+| Screen real estate       | 10 field lines      | 1 field line                  |
+| cscope compatibility     | N/A                 | Full — same binary            |
+
+## Installation
+
+```bash
+# Build from source
+cd cscope
+./configure
+make
+
+# Create the gscope symlink
+cd src
+ln -sf cscope gscope
+
+# Install both binaries
+cp cscope gscope gscope-indexer ~/bin/
+# or
+sudo cp cscope gscope /usr/local/bin/
+sudo cp gscope-indexer /usr/local/bin/
+```
+
+## Indexing Your Files
+
+gscope uses the same database format as cscope. Use gscope-indexer to build
+a database from non-C file types:
+
+```bash
+# Index markdown and text files in current directory (recursive)
+gscope-indexer -r -e "md txt" .
+
+# Index multiple file types
+gscope-indexer -r -e "md txt cap wiki rst yaml yml sh pl py" .
+
+# Specify custom database name
+gscope-indexer -r -e "md cap" -f myproject.out .
+
+# Verbose output
+gscope-indexer -v -r -e "md txt" .
+
+# Build file list only (no database)
+gscope-indexer -l -r -e "md txt" .
+```
+
+### gscope-indexer Options
+
+| Option          | Description                                        |
+|-----------------|----------------------------------------------------|
+| `-e "ext1 ext2"`| Space-separated list of extensions to index        |
+| `-f file`       | Database output file (default: cscope.out)         |
+| `-i file`       | File list output file (default: cscope.files)      |
+| `-r`            | Recurse into subdirectories                        |
+| `-l`            | List files only, do not build database             |
+| `-v`            | Verbose progress output                            |
+
+### Default Indexed Extensions
+
+When `-e` is not specified, gscope-indexer indexes:
+
+    md txt cap wiki rst adoc html xml json yaml yml sh pl py rb lua go
+
+## Launching gscope
+
+```bash
+# Launch in current directory (auto-indexes if needed)
+gscope
+
+# Launch with recursion
+gscope -R
+
+# Launch against a named database
+gscope -f myproject.out
+
+# Launch against a named database with recursion
+gscope -R -f myproject.out
+```
+
+## Search Expression Syntax
+
+gscope supports a boolean expression syntax for powerful multi-term searches.
+All matching is case-insensitive.
+
+### Simple Search
+
+```
+leviathan
+```
+Finds all lines containing the substring "leviathan".
+
+### AND Search ( && )
+
+```
+dave&&barry
+```
+Finds lines containing BOTH "dave" AND "barry".
+
+```
+marc&&lexi&&parkour
+```
+Finds lines containing ALL THREE substrings.
+
+### OR Search ( || )
+
+```
+dave||david
+```
+Finds lines containing EITHER "dave" OR "david".
+
+### Grouped Boolean Expressions ( (( )) )
+
+Use `((` and `))` to group OR alternatives, connected by `&&`:
+
+```
+((dave||david))&&((barry||barry jr))
+```
+Finds lines where (dave OR david) AND (barry OR barry jr) are both present.
+
+```
+((marc||marcus))&&stewart
+```
+Finds lines containing any variant of the first name AND "stewart".
+
+```
+((died||death||fallen||killed))&&maya
+```
+Finds lines referencing maya in the context of death or injury.
+
+```
+((wing chun||hung gar||white crane))&&((strike||kick||block))
+```
+Finds combat lines referencing specific martial arts styles.
+
+### Expression Evaluation Rules
+
+1. `(( ))` groups are evaluated first as OR expressions
+2. `&&` connects groups and plain terms with AND logic (all must match)
+3. `||` at the top level (outside groups) is treated as OR
+4. All matching is case-insensitive regardless of input case
+5. Empty terms (e.g. leading/trailing `&&`) are silently ignored
+
+## Keyboard Navigation
+
+gscope uses the same keyboard interface as cscope:
+
+| Key          | Action                                      |
+|--------------|---------------------------------------------|
+| Enter        | Execute search                              |
+| Tab          | Move between results and search field       |
+| 0-9 / a-z    | Jump directly to a result line              |
+| Space        | Next page of results                        |
+| +/-          | Scroll results forward/backward             |
+| Ctrl-D       | Page down through results                   |
+| Ctrl-U       | Page up through results                     |
+| Ctrl-E       | Edit file at result line                    |
+| ?            | Help screen                                 |
+| q            | Quit                                        |
+
+## Typical Workflows
+
+### Novel / Long-form Writing
+
+```bash
+cd ~/projects/MyNovel
+gscope-indexer -v -r -e "md txt" .
+gscope
+
+# Search examples:
+# maya                          find all Maya references
+# maya&&chapter                 Maya references within chapter context
+# ((died||death))&&maya         Maya death/injury references
+# ((marc||lexi))&&((marc||lexi)) lines where both characters appear
+```
+
+### Configuration and Skills Files
+
+```bash
+cd ~/fabrique/skills
+gscope-indexer -v -r -e "cap xml" .
+gscope -R
+
+# Search examples:
+# findstring&&cscope            skill entries referencing both
+# ((article||chapter))&&size    size definitions in authoring skills
+```
+
+### Mixed Project (Code + Docs)
+
+```bash
+gscope-indexer -v -r -e "md txt sh py yaml" .
+gscope -R
+```
+
+## Technical Notes
+
+- gscope uses the standard cscope database format (cscope.out)
+- Searches perform direct line-by-line file scanning, bypassing the
+  cscope cross-reference index. This ensures correct results for all
+  file types and expression complexity with no index format concerns.
+- Performance scales linearly with total file size. For typical
+  project sizes (hundreds of files, tens of thousands of lines)
+  searches complete in well under one second.
+- The cscope database is still used for file enumeration; gscope-indexer
+  must be run (or gscope -R used) to ensure all target files are indexed.
+
+## Origin
+
+gscope was developed as a fork of the cscope 15.8a codebase maintained
+by Laurent Boulard (https://github.com/lboulard/cscope).
+
+cscope was originally developed at Bell Labs in the 1970s and has been
+a staple of Unix C development environments for over 50 years. gscope
+extends that legacy by removing the C-language constraint, making
+cscope's proven navigation engine broadly applicable to any text corpus.
+
+Fork maintained at: https://github.com/theduke460/cscope

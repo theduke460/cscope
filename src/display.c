@@ -125,7 +125,8 @@ void
 dispinit(void)
 {
 	/* calculate the maximum displayed reference lines */
-	lastdispline = FLDLINE - 3;
+	/* gscope mode: only 1 field line needed, reclaim the other 9 */
+	lastdispline = (isgscope ? (LINES - 2) : FLDLINE) - 3;
 	mdisprefs = lastdispline - REFLINE + 1;
 
 
@@ -179,6 +180,8 @@ display(void)
 	/* display the pattern */
 	if (changing == YES) {
 	    printw("Change \"%s\" to \"%s\"", Pattern, newpat);
+	} else if (isgscope) {
+	    printw("Search text: %s", Pattern);
 	} else {
 	    printw("%c%s: %s", toupper((unsigned char)fields[field].text2[0]),
 		   fields[field].text2 + 1, Pattern);
@@ -339,7 +342,7 @@ display(void)
 	} /* for(reference output lines) */
     endrefs:
 	/* position the cursor for the message */
-	i = FLDLINE - 1;
+	i = (isgscope ? (LINES - 3) : (FLDLINE - 1));
 	if (screenline < i) {
 	    addch('\n');
 	}
@@ -358,9 +361,15 @@ display(void)
 	}
     }
     /* display the input fields */
-    move(FLDLINE, 0);
-    for (i = 0; i < FIELDS; ++i) {
-	printw("%s %s:\n", fields[i].text1, fields[i].text2);
+    move(isgscope ? (LINES - 2) : FLDLINE, 0);
+    if (isgscope) {
+        /* gscope mode: single generic search field at bottom */
+        printw("Find text (case-insensitive, use && for AND): ");
+    } else {
+        /* cscope mode: all C-language specific fields */
+        for (i = 0; i < FIELDS; ++i) {
+            printw("%s %s:\n", fields[i].text1, fields[i].text2);
+        }
     }
     /* display any prompt */
     if (changing == YES) {
@@ -375,8 +384,14 @@ display(void)
 void
 setfield(void)
 {
-	fldline = FLDLINE + field;
-	fldcolumn = strlen(fields[field].text1) + strlen(fields[field].text2) + 3;
+	if (isgscope) {
+		/* position cursor after the gscope prompt */
+		fldline   = LINES - 2;
+		fldcolumn = strlen("Find text (case-insensitive, use && for AND): ");
+	} else {
+		fldline   = FLDLINE + field;
+		fldcolumn = strlen(fields[field].text1) + strlen(fields[field].text2) + 3;
+	}
 }
 
 /* move to the current input field */
@@ -429,7 +444,10 @@ search(void)
 	savesig = signal(SIGINT, jumpback);
 	if (sigsetjmp(env, 1) == 0) {
 		f = fields[field].findfcn;
-		if (f == findregexp || f == findstring) {
+		if (isgscope) {
+			/* gscope mode: use findgscope for &&-aware case-insensitive search */
+			findresult = findgscope(Pattern);
+		} else if (f == findregexp || f == findstring) {
 			findresult = (*f)(Pattern);
 		} else {
 			if ((nonglobalrefs = myfopen(temp2, "wb")) == NULL) {
@@ -478,8 +496,9 @@ search(void)
 			(void) snprintf(lastmsg, sizeof(lastmsg), "Egrep %s in this pattern: %s", 
 				       findresult, Pattern);
 		} else if (rc == NOTSYMBOL) {
-			(void) snprintf(lastmsg, sizeof(lastmsg), "This is not a C symbol: %s", 
-				       Pattern);
+			(void) snprintf(lastmsg, sizeof(lastmsg), "%s: %s",
+				isgscope ? "No match found for" : "This is not a C symbol:",
+				Pattern);
 		} else if (rc == REGCMPERROR) {
 			(void) snprintf(lastmsg, sizeof(lastmsg), "Error in this regcomp(3) regular expression: %s", 
 				       Pattern);
@@ -489,7 +508,8 @@ search(void)
 				       Pattern);
 		} else {
 			(void) snprintf(lastmsg, sizeof(lastmsg), "Could not find the %s: %s", 
-				       fields[field].text2, Pattern);
+				isgscope ? "text" : fields[field].text2,
+				Pattern);
 		}
 		return(NO);
 	}

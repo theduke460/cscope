@@ -302,6 +302,9 @@ main(int argc, char **argv)
     /* save the command name for messages */
     argv0 = argv[0];
 
+    /* detect gscope mode via argv[0] basename */
+    isgscope = (strcmp(mybasename(argv0), "gscope") == 0) ? YES : NO;
+
     /* set the options */
 #ifdef HAVE_GETOPT_LONG 
 	argv = parse_options(&argc, argv);
