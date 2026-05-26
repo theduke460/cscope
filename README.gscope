@@ -39,15 +39,15 @@ make
 cd src
 ln -sf cscope gscope
 
-# Create the cscope-indexer symlink
-ln -sf gscope-indexer cscope-indexer
+# Create the gscope-indexer symlink
+ln -sf cscope-indexer gscope-indexer
 
 # Install binaries and scripts
 cp cscope gscope ~/bin/
-cp gscope-indexer cscope-indexer ~/bin/
+cp cscope-indexer gscope-indexer ~/bin/
 # or system-wide:
 sudo cp cscope gscope /usr/local/bin/
-sudo cp gscope-indexer cscope-indexer /usr/local/bin/
+sudo cp cscope-indexer gscope-indexer /usr/local/bin/
 ```
 
 ## Indexing Your Files
