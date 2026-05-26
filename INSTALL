@@ -4,7 +4,7 @@ This program's build procedure is fairly standard.  Try:
 
 	./configure
 	make
-	make install
+	make install   (NOTE: This may need to be run as root)
 
 Options to the configure script are up to you.  For details, run:
 
