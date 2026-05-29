@@ -1,8 +1,12 @@
 ------------------------------------------------------------------------
-NOTE: This repository includes gscope, a language-agnostic generic text
+**NOTE:** This repository includes gscope, a language-agnostic generic text
 search extension to cscope. If you want to use cscope with non-C file
 types (markdown, plain text, scripts, etc.), see README.gscope for full
 details on installation, indexing, and boolean search syntax.
+------------------------------------------------------------------------
+**NOTE:** For cscope to build, you may need to install the packsages
+'autoconf', 'flex', 'yacc' and 'libncurses-dev'.  Once any such packages
+are installed, you should re-run './configure' to avoid build errors.
 ------------------------------------------------------------------------
 
 Cscope is a text screen based source browsing tool.  Although it is
