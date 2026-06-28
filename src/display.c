@@ -195,7 +195,7 @@ display(void)
 	if (dispcomponents > 0)
 	    printw("%-*s ", filelen, "File");
 
-	if (field == SYMBOL || field == CALLEDBY || field == CALLING) {
+	if (!isgscope && (field == SYMBOL || field == CALLEDBY || field == CALLING)) {
 	    printw("%-*s ", fcnlen, "Function");
 	}
 	if (field != FILENAME) {
@@ -217,7 +217,7 @@ display(void)
 	if (dispcomponents > 0) {
 	    width -= filelen + 1;
 	}
-	if (field == SYMBOL || field == CALLEDBY || field == CALLING) {
+	if (!isgscope && (field == SYMBOL || field == CALLEDBY || field == CALLING)) {
 	    width -= fcnlen + 1;
 	}
 
@@ -268,7 +268,7 @@ display(void)
 	    } /* else(field == FILENAME) */
 
 	    /* display the function name */
-	    if (field == SYMBOL || field == CALLEDBY || field == CALLING) {
+	    if (!isgscope && (field == SYMBOL || field == CALLEDBY || field == CALLING)) {
 		printw("%-*.*s ", fcnlen, fcnlen, function);
 	    }
 	    if (field == FILENAME) {

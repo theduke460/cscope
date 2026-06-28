@@ -42,6 +42,6 @@
 #define CSCOPE_VERSION_H
 
 #define	FILEVERSION	15	/* Initial Open Source and Linux Port */
-#define	FIXVERSION	".8a-gscope1"	/* gscope fork - generic search mode */
+#define	FIXVERSION	".8a-gscope1.1"	/* gscope1.1 - suppress Function column in gscope mode */
 
 #endif /* CSCOPE_VERSION_H */
